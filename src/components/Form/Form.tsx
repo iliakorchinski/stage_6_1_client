@@ -17,24 +17,35 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { useParams, useNavigate } from 'react-router-dom';
 import { schema } from '../../schemas/userValidationSchema';
 import { type InferType } from 'yup';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { getUser } from '../../service/getUser';
-import { getFilledFields } from '../../utils/getFilledFields';
-import { getChangedFields } from '../../utils/getChangedfields';
 
 export type User = InferType<typeof schema>;
 
 const roles = ['admin', 'user', 'manager'];
 
-export const UserForm = () => {
-  const [existingUser, setExistingUser] = useState<User | undefined>();
-  const navigate = useNavigate();
+type Mode = 'create' | 'edit';
+
+export const Form = ({ mode }: { mode: Mode }) => {
   const { id } = useParams();
+
+  const defaultValues = {
+    username: '',
+    email: '',
+    firstName: '',
+    lastName: '',
+    age: 18,
+    role: 'user',
+    isActive: true,
+    tasks: [],
+  };
+
+  const navigate = useNavigate();
+
   const {
     control,
-    register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, dirtyFields },
     reset,
   } = useForm({
     defaultValues: {
@@ -47,6 +58,7 @@ export const UserForm = () => {
       isActive: true,
       tasks: [],
     },
+
     resolver: yupResolver(schema),
   });
 
@@ -54,18 +66,38 @@ export const UserForm = () => {
     control,
     name: 'tasks',
   });
-
   const onSubmit = async (data: User) => {
     try {
       const method = id ? 'PATCH' : 'POST';
-      const isEdit = !!id;
 
-      let payload: Partial<User>;
+      let changedFields: Partial<User> = {};
 
-      if (isEdit && existingUser) {
-        payload = getChangedFields(data, existingUser);
-      } else {
-        payload = getFilledFields(data);
+      if (mode === 'create') {
+        changedFields = Object.fromEntries(
+          Object.entries(data).filter(([key, value]) => {
+            const defVal = defaultValues?.[key as keyof User];
+
+            if (Array.isArray(value) && value.length === 0) {
+              return false;
+            }
+            return (value !== '' && value !== null) || (defVal !== '' && defVal !== null);
+          })
+        ) as Partial<User>;
+      }
+
+      if (mode === 'edit') {
+        changedFields = Object.fromEntries(
+          Object.entries(data).filter(([key, value]) => {
+            if (!dirtyFields[key as keyof User]) {
+              return false;
+            }
+
+            if (typeof value === 'string' && value.trim() === '') {
+              return false;
+            }
+            return dirtyFields[key as keyof User];
+          })
+        ) as Partial<User>;
       }
 
       const url = `http://localhost:3001/api/users${id ? `/${id}` : ''}`;
@@ -73,7 +105,7 @@ export const UserForm = () => {
       await axios({
         method,
         url,
-        data: payload,
+        data: changedFields,
       });
       navigate('/');
     } catch (err) {
@@ -87,7 +119,6 @@ export const UserForm = () => {
         const data = await getUser(id);
         if (data) {
           reset(data);
-          setExistingUser(data);
         }
       }
     };
@@ -109,53 +140,86 @@ export const UserForm = () => {
         gridTemplateColumns: 'repeat(6, 1fr)',
       }}
     >
-      <TextField
-        fullWidth
-        label="Username"
-        {...register('username')}
-        sx={{ gridColumn: 'span 6' }}
-        InputLabelProps={{ shrink: true }}
-        error={!!errors.username}
-        helperText={errors.username?.message}
+      <Controller
+        name="username"
+        control={control}
+        render={({ field }) => (
+          <TextField
+            {...field}
+            fullWidth
+            label="Username"
+            sx={{ gridColumn: 'span 6' }}
+            InputLabelProps={{ shrink: true }}
+            error={!!errors.username}
+            helperText={errors.username?.message}
+          />
+        )}
       />
 
-      <TextField
-        fullWidth
-        label="Email"
-        {...register('email')}
-        sx={{ gridColumn: 'span 2' }}
-        InputLabelProps={{ shrink: true }}
-        error={!!errors.email}
-        helperText={errors.email?.message}
-      />
-      <TextField
-        fullWidth
-        label="First Name"
-        {...register('firstName')}
-        sx={{ gridColumn: 'span 2' }}
-        InputLabelProps={{ shrink: true }}
-        error={!!errors.firstName}
-        helperText={errors.firstName?.message}
-      />
-      <TextField
-        fullWidth
-        label="Last Name"
-        {...register('lastName')}
-        sx={{ gridColumn: 'span 2' }}
-        InputLabelProps={{ shrink: true }}
-        error={!!errors.lastName}
-        helperText={errors.lastName?.message}
+      <Controller
+        name="email"
+        control={control}
+        render={({ field }) => (
+          <TextField
+            {...field}
+            fullWidth
+            label="Email"
+            sx={{ gridColumn: 'span 2' }}
+            InputLabelProps={{ shrink: true }}
+            error={!!errors.email}
+            helperText={errors.email?.message}
+          />
+        )}
       />
 
-      <TextField
-        fullWidth
-        label="Age"
-        type="number"
-        {...register('age')}
-        sx={{ gridColumn: 'span 3' }}
-        error={!!errors.age}
-        helperText={errors.age?.message}
+      <Controller
+        name="firstName"
+        control={control}
+        render={({ field }) => (
+          <TextField
+            {...field}
+            fullWidth
+            label="First Name"
+            sx={{ gridColumn: 'span 2' }}
+            InputLabelProps={{ shrink: true }}
+            error={!!errors.firstName}
+            helperText={errors.firstName?.message}
+          />
+        )}
       />
+
+      <Controller
+        name="lastName"
+        control={control}
+        render={({ field }) => (
+          <TextField
+            {...field}
+            fullWidth
+            label="Last Name"
+            sx={{ gridColumn: 'span 2' }}
+            InputLabelProps={{ shrink: true }}
+            error={!!errors.lastName}
+            helperText={errors.lastName?.message}
+          />
+        )}
+      />
+
+      <Controller
+        name="age"
+        control={control}
+        render={({ field }) => (
+          <TextField
+            {...field}
+            fullWidth
+            label="Age"
+            type="number"
+            sx={{ gridColumn: 'span 3' }}
+            error={!!errors.age}
+            helperText={errors.age?.message}
+          />
+        )}
+      />
+
       <FormControl fullWidth sx={{ gridColumn: 'span 3' }}>
         <InputLabel id="role-label">Role</InputLabel>
         <Controller
@@ -173,10 +237,23 @@ export const UserForm = () => {
         />
       </FormControl>
 
-      <FormControlLabel
-        control={<Checkbox defaultChecked {...register('isActive')} />}
-        label="Active user"
-        sx={{ gridColumn: 'span 6' }}
+      <Controller
+        name="isActive"
+        control={control}
+        defaultValue={true}
+        render={({ field }) => (
+          <FormControlLabel
+            control={
+              <Checkbox
+                {...field}
+                checked={field.value}
+                onChange={(e) => field.onChange(e.target.checked)}
+              />
+            }
+            label="Active user"
+            sx={{ gridColumn: 'span 6' }}
+          />
+        )}
       />
 
       <Box sx={{ gridColumn: 'span 6' }}>
@@ -195,12 +272,18 @@ export const UserForm = () => {
               alignItems: 'center',
             }}
           >
-            <TextField
-              fullWidth
-              label="Task Name"
-              {...register(`tasks.${index}.name`)}
-              error={errors.tasks && !!errors.tasks[index]?.name}
-              helperText={errors.tasks && errors.tasks[index]?.message}
+            <Controller
+              name={`tasks.${index}.name`}
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  fullWidth
+                  label="Task Name"
+                  error={errors.tasks && !!errors.tasks[index]?.name}
+                  helperText={errors.tasks && errors.tasks[index]?.message}
+                />
+              )}
             />
 
             <FormControl fullWidth>
@@ -208,7 +291,6 @@ export const UserForm = () => {
               <Controller
                 control={control}
                 name={`tasks.${index}.status`}
-                defaultValue="todo"
                 render={({ field }) => (
                   <Select {...field} label="Status">
                     <MenuItem value="todo">To Do</MenuItem>

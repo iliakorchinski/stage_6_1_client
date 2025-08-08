@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react';
 import classes from './UsersList.module.css';
 import { type User } from '../../types/user';
 import { Link } from 'react-router-dom';
-import { fetchUsers } from '../../service/getUsers';
+import { getUsers } from '../../service/getUsers';
 import { Box, List, ListItem, Typography } from '@mui/material';
 
 export const UsersList = () => {
   const [users, setUsers] = useState<User[]>([]);
   useEffect(() => {
     const fetchData = async () => {
-      const data = await fetchUsers();
+      const data = await getUsers();
       setUsers(data);
     };
     fetchData();

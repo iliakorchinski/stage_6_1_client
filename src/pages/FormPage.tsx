@@ -1,5 +1,7 @@
-import { UserForm } from '../components/Form/Form';
+import { Form } from '../components/Form/Form';
 
-export const FormPage = () => {
-  return <UserForm />;
+type Mode = 'create' | 'edit';
+
+export const FormPage = ({ mode }: { mode: Mode }) => {
+  return <Form mode={mode} />;
 };

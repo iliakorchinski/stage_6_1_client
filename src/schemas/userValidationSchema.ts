@@ -7,7 +7,7 @@ export const schema = yup.object().shape({
     .max(30, 'Username must be at most 30 characters'),
 
   email: yup.string().email('Invalid email').optional(),
-  firstName: yup.string().optional(),
+  firstName: yup.string().max(30, 'firsName must be at most 30 characters').optional(),
   lastName: yup.string().optional(),
 
   age: yup.number().typeError('Age must be a number').min(0, 'Age must be non-negative').optional(),

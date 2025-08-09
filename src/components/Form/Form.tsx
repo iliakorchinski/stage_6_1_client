@@ -1,44 +1,42 @@
-import {
-  Box,
-  Button,
-  Checkbox,
-  FormControl,
-  FormControlLabel,
-  IconButton,
-  InputLabel,
-  MenuItem,
-  Select,
-  TextField,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Checkbox, FormControlLabel, IconButton, Typography } from '@mui/material';
 import axios from 'axios';
-import { useForm, Controller, useFieldArray } from 'react-hook-form';
+import {
+  useForm,
+  useFormContext,
+  Controller,
+  useFieldArray,
+  type Resolver,
+  FormProvider,
+} from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useParams, useNavigate } from 'react-router-dom';
 import { schema } from '../../schemas/userValidationSchema';
 import { type InferType } from 'yup';
-import { useEffect } from 'react';
 import { getUser } from '../../service/getUser';
+import { FieldText } from './Field/FieldText';
+import { SelectField } from './Field/SelectField';
 
 export type User = InferType<typeof schema>;
 
 const roles = ['admin', 'user', 'manager'];
+const statuses = ['todo', 'in_progress', 'done'];
 
 type Mode = 'create' | 'edit';
 
+const defaultValues: Partial<User> = {
+  username: '',
+  email: '',
+  firstName: '',
+  lastName: '',
+  age: 18,
+  role: 'user',
+  isActive: true,
+  tasks: [],
+};
+
 export const Form = ({ mode }: { mode: Mode }) => {
   const { id } = useParams();
-
-  const defaultValues = {
-    username: '',
-    email: '',
-    firstName: '',
-    lastName: '',
-    age: 18,
-    role: 'user',
-    isActive: true,
-    tasks: [],
-  };
+  const methods = useFormContext();
 
   const navigate = useNavigate();
 
@@ -46,20 +44,16 @@ export const Form = ({ mode }: { mode: Mode }) => {
     control,
     handleSubmit,
     formState: { errors, dirtyFields },
-    reset,
-  } = useForm({
-    defaultValues: {
-      username: '',
-      email: '',
-      firstName: '',
-      lastName: '',
-      age: 18,
-      role: 'user',
-      isActive: true,
-      tasks: [],
+  } = useForm<User>({
+    defaultValues: async () => {
+      if (id) {
+        return await getUser(id);
+      } else {
+        return defaultValues;
+      }
     },
 
-    resolver: yupResolver(schema),
+    resolver: yupResolver(schema) as Resolver<User>,
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -113,213 +107,110 @@ export const Form = ({ mode }: { mode: Mode }) => {
     }
   };
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      if (id) {
-        const data = await getUser(id);
-        if (data) {
-          reset(data);
-        }
-      }
-    };
-    fetchUser();
-  }, [id, reset]);
-
   return (
-    <Box
-      component="form"
-      onSubmit={handleSubmit(onSubmit)}
-      sx={{
-        maxWidth: 800,
-        mx: 'auto',
-        mt: 4,
-        border: '1px solid black',
-        p: 2,
-        display: 'grid',
-        gap: 2,
-        gridTemplateColumns: 'repeat(6, 1fr)',
-      }}
-    >
-      <Controller
-        name="username"
-        control={control}
-        render={({ field }) => (
-          <TextField
-            {...field}
-            fullWidth
-            label="Username"
-            sx={{ gridColumn: 'span 6' }}
-            InputLabelProps={{ shrink: true }}
-            error={!!errors.username}
-            helperText={errors.username?.message}
-          />
-        )}
-      />
+    <FormProvider {...methods}>
+      <Box
+        component="form"
+        onSubmit={handleSubmit(onSubmit)}
+        sx={{
+          maxWidth: 800,
+          mx: 'auto',
+          mt: 4,
+          border: '1px solid black',
+          p: 2,
+          display: 'grid',
+          gap: 2,
+          gridTemplateColumns: 'repeat(6, 1fr)',
+        }}
+      >
+        <FieldText name="username" errors={errors} control={control} span="span 6" />
 
-      <Controller
-        name="email"
-        control={control}
-        render={({ field }) => (
-          <TextField
-            {...field}
-            fullWidth
-            label="Email"
-            sx={{ gridColumn: 'span 2' }}
-            InputLabelProps={{ shrink: true }}
-            error={!!errors.email}
-            helperText={errors.email?.message}
-          />
-        )}
-      />
+        <FieldText name="email" errors={errors} control={control} span="span 2" />
 
-      <Controller
-        name="firstName"
-        control={control}
-        render={({ field }) => (
-          <TextField
-            {...field}
-            fullWidth
-            label="First Name"
-            sx={{ gridColumn: 'span 2' }}
-            InputLabelProps={{ shrink: true }}
-            error={!!errors.firstName}
-            helperText={errors.firstName?.message}
-          />
-        )}
-      />
+        <FieldText name="firstName" errors={errors} control={control} span="span 2" />
 
-      <Controller
-        name="lastName"
-        control={control}
-        render={({ field }) => (
-          <TextField
-            {...field}
-            fullWidth
-            label="Last Name"
-            sx={{ gridColumn: 'span 2' }}
-            InputLabelProps={{ shrink: true }}
-            error={!!errors.lastName}
-            helperText={errors.lastName?.message}
-          />
-        )}
-      />
+        <FieldText name="lastName" errors={errors} control={control} span="span 2" />
 
-      <Controller
-        name="age"
-        control={control}
-        render={({ field }) => (
-          <TextField
-            {...field}
-            fullWidth
-            label="Age"
-            type="number"
-            sx={{ gridColumn: 'span 3' }}
-            error={!!errors.age}
-            helperText={errors.age?.message}
-          />
-        )}
-      />
+        <FieldText name="age" errors={errors} control={control} span="span 3" />
 
-      <FormControl fullWidth sx={{ gridColumn: 'span 3' }}>
-        <InputLabel id="role-label">Role</InputLabel>
-        <Controller
+        <SelectField
           name="role"
           control={control}
+          selectItems={roles}
+          label="Role"
+          sx={{ gridColumn: 'span 3' }}
+        />
+
+        <Controller
+          name="isActive"
+          control={control}
+          defaultValue={true}
           render={({ field }) => (
-            <Select labelId="role-label" label="Role" {...field}>
-              {roles.map((role) => (
-                <MenuItem key={role} value={role}>
-                  {role}
-                </MenuItem>
-              ))}
-            </Select>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  {...field}
+                  checked={field.value}
+                  onChange={(e) => field.onChange(e.target.checked)}
+                />
+              }
+              label="Active user"
+              sx={{ gridColumn: 'span 6' }}
+            />
           )}
         />
-      </FormControl>
 
-      <Controller
-        name="isActive"
-        control={control}
-        defaultValue={true}
-        render={({ field }) => (
-          <FormControlLabel
-            control={
-              <Checkbox
-                {...field}
-                checked={field.value}
-                onChange={(e) => field.onChange(e.target.checked)}
-              />
-            }
-            label="Active user"
-            sx={{ gridColumn: 'span 6' }}
-          />
-        )}
-      />
+        <Box sx={{ gridColumn: 'span 6' }}>
+          <Typography variant="h6" mb={1}>
+            Tasks
+          </Typography>
 
-      <Box sx={{ gridColumn: 'span 6' }}>
-        <Typography variant="h6" mb={1}>
-          Tasks
-        </Typography>
-
-        {fields.map((field, index) => (
-          <Box
-            key={field.id}
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: '3fr 2fr auto',
-              gap: 2,
-              mb: 1,
-              alignItems: 'center',
-            }}
-          >
-            <Controller
-              name={`tasks.${index}.name`}
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  fullWidth
-                  label="Task Name"
-                  error={errors.tasks && !!errors.tasks[index]?.name}
-                  helperText={errors.tasks && errors.tasks[index]?.message}
-                />
-              )}
-            />
-
-            <FormControl fullWidth>
-              <InputLabel>Status</InputLabel>
-              <Controller
+          {fields.map((field, index) => (
+            <Box
+              key={field.id}
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: '3fr 2fr auto',
+                gap: 2,
+                mb: 1,
+                alignItems: 'center',
+              }}
+            >
+              <FieldText
+                name={`tasks.${index}.name`}
+                errors={errors}
                 control={control}
-                name={`tasks.${index}.status`}
-                render={({ field }) => (
-                  <Select {...field} label="Status">
-                    <MenuItem value="todo">To Do</MenuItem>
-                    <MenuItem value="in_progress">In Progress</MenuItem>
-                    <MenuItem value="done">Done</MenuItem>
-                  </Select>
-                )}
+                label="Task Name"
               />
-              {errors.tasks?.[index]?.status && (
-                <Typography variant="caption" color="error">
-                  {errors.tasks[index]?.status?.message}
-                </Typography>
-              )}
-            </FormControl>
 
-            <IconButton color="error" onClick={() => remove(index)}>
-              Remove
-            </IconButton>
-          </Box>
-        ))}
+              <SelectField
+                name={`tasks.${index}.status`}
+                control={control}
+                selectItems={statuses}
+                label="Status"
+              >
+                {errors.tasks?.[index]?.status && (
+                  <Typography variant="caption" color="error">
+                    {errors.tasks[index]?.status?.message}
+                  </Typography>
+                )}
+              </SelectField>
 
-        <Button variant="outlined" onClick={() => append({ name: '', status: 'todo' })}>
-          Add Task
+              <IconButton color="error" onClick={() => remove(index)}>
+                Remove
+              </IconButton>
+            </Box>
+          ))}
+
+          <Button variant="outlined" onClick={() => append({ name: '', status: 'todo' })}>
+            Add Task
+          </Button>
+        </Box>
+
+        <Button type="submit" variant="contained" sx={{ gridColumn: 'span 6' }}>
+          Submit
         </Button>
       </Box>
-
-      <Button type="submit" variant="contained" sx={{ gridColumn: 'span 6' }}>
-        Submit
-      </Button>
-    </Box>
+    </FormProvider>
   );
 };

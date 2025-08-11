@@ -104,7 +104,6 @@ export const Form: FC<FormProps<User>> = ({ defaultValues }) => {
         ) as Partial<User>;
       }
 
-      console.log(changedFields);
       const url = `http://localhost:3001/api/users${id ? `/${id}` : ''}`;
 
       await axios({

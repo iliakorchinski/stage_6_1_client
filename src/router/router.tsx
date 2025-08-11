@@ -4,6 +4,6 @@ import { FormPage } from '../pages/FormPage';
 
 export const router = createBrowserRouter([
   { path: '/', element: <UserListPage /> },
-  { path: '/new', element: <FormPage mode="create" /> },
-  { path: '/edit/:id', element: <FormPage mode="edit" /> },
+  { path: '/new', element: <FormPage /> },
+  { path: '/edit/:id', element: <FormPage /> },
 ]);

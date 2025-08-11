@@ -45,14 +45,13 @@ export const UsersList = () => {
           <Box className={classes.taskList}>
             <Typography component="strong">Tasks:</Typography>
             <List>
-              {user.tasks &&
-                user.tasks.map((task, index) => (
-                  <ListItem key={index}>
-                    <Typography component="span" className={classes.status}>
-                      {task.name} --- {task.status}
-                    </Typography>
-                  </ListItem>
-                ))}
+              {user.tasks?.map((task, index) => (
+                <ListItem key={index}>
+                  <Typography component="span" className={classes.status}>
+                    {task.name} --- {task.status}
+                  </Typography>
+                </ListItem>
+              ))}
             </List>
             <Link to={`/edit/${user.id}`}>Edit</Link>
           </Box>

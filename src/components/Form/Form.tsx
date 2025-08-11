@@ -1,13 +1,7 @@
 import { Box, Button, Checkbox, FormControlLabel, IconButton, Typography } from '@mui/material';
+import classes from './Form.module.css';
 import axios from 'axios';
-import {
-  useForm,
-  useFormContext,
-  Controller,
-  useFieldArray,
-  type Resolver,
-  FormProvider,
-} from 'react-hook-form';
+import { useForm, Controller, useFieldArray, type Resolver, FormProvider } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useParams, useNavigate } from 'react-router-dom';
 import { schema } from '../../schemas/userValidationSchema';
@@ -21,30 +15,25 @@ export type User = InferType<typeof schema>;
 const roles = ['admin', 'user', 'manager'];
 const statuses = ['todo', 'in_progress', 'done'];
 
-type Mode = 'create' | 'edit';
+export const Form = () => {
+  const defaultValues: Partial<User> = {
+    username: '',
+    email: '',
+    firstName: '',
+    lastName: '',
+    age: 18,
+    role: 'user',
+    isActive: true,
+    tasks: [],
+  };
 
-const defaultValues: Partial<User> = {
-  username: '',
-  email: '',
-  firstName: '',
-  lastName: '',
-  age: 18,
-  role: 'user',
-  isActive: true,
-  tasks: [],
-};
-
-export const Form = ({ mode }: { mode: Mode }) => {
   const { id } = useParams();
-  const methods = useFormContext();
+
+  const isEditMode = !!id;
 
   const navigate = useNavigate();
 
-  const {
-    control,
-    handleSubmit,
-    formState: { errors, dirtyFields },
-  } = useForm<User>({
+  const methods = useForm<User>({
     defaultValues: async () => {
       if (id) {
         return await getUser(id);
@@ -52,9 +41,14 @@ export const Form = ({ mode }: { mode: Mode }) => {
         return defaultValues;
       }
     },
-
     resolver: yupResolver(schema) as Resolver<User>,
   });
+
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, dirtyFields },
+  } = methods;
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -66,7 +60,7 @@ export const Form = ({ mode }: { mode: Mode }) => {
 
       let changedFields: Partial<User> = {};
 
-      if (mode === 'create') {
+      if (!isEditMode) {
         changedFields = Object.fromEntries(
           Object.entries(data).filter(([key, value]) => {
             const defVal = defaultValues?.[key as keyof User];
@@ -79,7 +73,7 @@ export const Form = ({ mode }: { mode: Mode }) => {
         ) as Partial<User>;
       }
 
-      if (mode === 'edit') {
+      if (isEditMode) {
         changedFields = Object.fromEntries(
           Object.entries(data).filter(([key, value]) => {
             if (!dirtyFields[key as keyof User]) {
@@ -94,6 +88,7 @@ export const Form = ({ mode }: { mode: Mode }) => {
         ) as Partial<User>;
       }
 
+      console.log(changedFields);
       const url = `http://localhost:3001/api/users${id ? `/${id}` : ''}`;
 
       await axios({
@@ -109,37 +104,18 @@ export const Form = ({ mode }: { mode: Mode }) => {
 
   return (
     <FormProvider {...methods}>
-      <Box
-        component="form"
-        onSubmit={handleSubmit(onSubmit)}
-        sx={{
-          maxWidth: 800,
-          mx: 'auto',
-          mt: 4,
-          border: '1px solid black',
-          p: 2,
-          display: 'grid',
-          gap: 2,
-          gridTemplateColumns: 'repeat(6, 1fr)',
-        }}
-      >
-        <FieldText name="username" errors={errors} control={control} span="span 6" />
+      <form onSubmit={handleSubmit(onSubmit)} className={classes.form}>
+        <FieldText name="username" span="span 6" />
 
-        <FieldText name="email" errors={errors} control={control} span="span 2" />
+        <FieldText name="email" span="span 2" />
 
-        <FieldText name="firstName" errors={errors} control={control} span="span 2" />
+        <FieldText name="firstName" span="span 2" />
 
-        <FieldText name="lastName" errors={errors} control={control} span="span 2" />
+        <FieldText name="lastName" span="span 2" />
 
-        <FieldText name="age" errors={errors} control={control} span="span 3" />
+        <FieldText name="age" span="span 3" />
 
-        <SelectField
-          name="role"
-          control={control}
-          selectItems={roles}
-          label="Role"
-          sx={{ gridColumn: 'span 3' }}
-        />
+        <SelectField name="role" items={roles} label="Role" sx={{ gridColumn: 'span 3' }} />
 
         <Controller
           name="isActive"
@@ -176,19 +152,9 @@ export const Form = ({ mode }: { mode: Mode }) => {
                 alignItems: 'center',
               }}
             >
-              <FieldText
-                name={`tasks.${index}.name`}
-                errors={errors}
-                control={control}
-                label="Task Name"
-              />
+              <FieldText name={`tasks.${index}.name`} label="Task Name" />
 
-              <SelectField
-                name={`tasks.${index}.status`}
-                control={control}
-                selectItems={statuses}
-                label="Status"
-              >
+              <SelectField name={`tasks.${index}.status`} items={statuses} label="Status">
                 {errors.tasks?.[index]?.status && (
                   <Typography variant="caption" color="error">
                     {errors.tasks[index]?.status?.message}
@@ -210,7 +176,7 @@ export const Form = ({ mode }: { mode: Mode }) => {
         <Button type="submit" variant="contained" sx={{ gridColumn: 'span 6' }}>
           Submit
         </Button>
-      </Box>
+      </form>
     </FormProvider>
   );
 };

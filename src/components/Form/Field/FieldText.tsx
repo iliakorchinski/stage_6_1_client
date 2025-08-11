@@ -12,9 +12,9 @@ type FieldTextProps = {
 export const FieldText: FC<FieldTextProps> = ({ name, span, label }) => {
   const {
     control,
-    formState: { errors: errors2 },
+    formState: { errors },
   } = useFormContext();
-  const error = get(errors2, name);
+  const error = get(errors, name);
 
   return (
     <Controller

@@ -1,9 +1,9 @@
 import { createBrowserRouter } from 'react-router-dom';
-import { UserListPage } from '../pages/UserListPage';
+import { UsersList } from '../components/Users/UsersList';
 import { FormPage } from '../pages/FormPage';
 
 export const router = createBrowserRouter([
-  { path: '/', element: <UserListPage /> },
+  { path: '/', element: <UsersList /> },
   { path: '/new', element: <FormPage /> },
   { path: '/edit/:id', element: <FormPage /> },
 ]);

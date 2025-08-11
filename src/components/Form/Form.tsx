@@ -1,47 +1,63 @@
 import { Box, Button, Checkbox, FormControlLabel, IconButton, Typography } from '@mui/material';
 import classes from './Form.module.css';
 import axios from 'axios';
-import { useForm, Controller, useFieldArray, type Resolver, FormProvider } from 'react-hook-form';
+import {
+  useForm,
+  Controller,
+  useFieldArray,
+  type Resolver,
+  FormProvider,
+  type FieldValues,
+  type DefaultValues,
+} from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useParams, useNavigate } from 'react-router-dom';
 import { schema } from '../../schemas/userValidationSchema';
 import { type InferType } from 'yup';
-import { getUser } from '../../service/getUser';
 import { FieldText } from './Field/FieldText';
 import { SelectField } from './Field/SelectField';
+import type { FC } from 'react';
 
 export type User = InferType<typeof schema>;
+
+type FormProps<T extends FieldValues> = {
+  defaultValues: DefaultValues<T> | (() => Promise<DefaultValues<T>>);
+};
 
 const roles = ['admin', 'user', 'manager'];
 const statuses = ['todo', 'in_progress', 'done'];
 
-export const Form = () => {
-  const defaultValues: Partial<User> = {
-    username: '',
-    email: '',
-    firstName: '',
-    lastName: '',
-    age: 18,
-    role: 'user',
-    isActive: true,
-    tasks: [],
-  };
+const values: Partial<User> = {
+  username: '',
+  email: '',
+  firstName: '',
+  lastName: '',
+  age: 18,
+  role: 'user',
+  isActive: true,
+  tasks: [],
+};
 
+export const Form: FC<FormProps<User>> = ({ defaultValues }) => {
+  async function normalizeDefaultValues() {
+    const values = typeof defaultValues === 'function' ? await defaultValues() : defaultValues;
+    return {
+      ...values,
+      tasks: (values.tasks ?? []).map((task) => ({
+        name: task?.name ?? '',
+        status: task?.status ?? 'todo',
+      })),
+    };
+  }
   const { id } = useParams();
 
   const isEditMode = !!id;
 
   const navigate = useNavigate();
 
-  const methods = useForm<User>({
-    defaultValues: async () => {
-      if (id) {
-        return await getUser(id);
-      } else {
-        return defaultValues;
-      }
-    },
-    resolver: yupResolver(schema) as Resolver<User>,
+  const methods = useForm<Partial<User>>({
+    defaultValues: normalizeDefaultValues,
+    resolver: yupResolver(schema) as Resolver<Partial<User>>,
   });
 
   const {
@@ -54,7 +70,7 @@ export const Form = () => {
     control,
     name: 'tasks',
   });
-  const onSubmit = async (data: User) => {
+  const onSubmit = async (data: Partial<User>) => {
     try {
       const method = id ? 'PATCH' : 'POST';
 
@@ -63,7 +79,7 @@ export const Form = () => {
       if (!isEditMode) {
         changedFields = Object.fromEntries(
           Object.entries(data).filter(([key, value]) => {
-            const defVal = defaultValues?.[key as keyof User];
+            const defVal = values?.[key as keyof User];
 
             if (Array.isArray(value) && value.length === 0) {
               return false;

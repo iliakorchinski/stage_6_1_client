@@ -4,7 +4,9 @@ export const schema = yup.object().shape({
   username: yup
     .string()
     .required('Username is required')
-    .max(30, 'Username must be at most 30 characters'),
+    .max(30, 'Username must be at most 30 characters')
+    .nonNullable()
+    .defined() as yup.StringSchema<string>,
 
   email: yup.string().email('Invalid email').optional(),
   firstName: yup.string().max(30, 'firsName must be at most 30 characters').optional(),

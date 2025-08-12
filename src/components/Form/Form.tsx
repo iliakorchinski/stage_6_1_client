@@ -1,15 +1,7 @@
 import { Box, Button, Checkbox, FormControlLabel, IconButton, Typography } from '@mui/material';
 import classes from './Form.module.css';
 import axios from 'axios';
-import {
-  useForm,
-  Controller,
-  useFieldArray,
-  type Resolver,
-  FormProvider,
-  type FieldValues,
-  type DefaultValues,
-} from 'react-hook-form';
+import { useForm, Controller, useFieldArray, type Resolver, FormProvider } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useParams, useNavigate } from 'react-router-dom';
 import { schema } from '../../schemas/userValidationSchema';
@@ -17,47 +9,29 @@ import { type InferType } from 'yup';
 import { FieldText } from './Field/FieldText';
 import { SelectField } from './Field/SelectField';
 import type { FC } from 'react';
+import { compose, isNil, negate, isEqual } from 'lodash/fp';
 
 export type User = InferType<typeof schema>;
 
-type FormProps<T extends FieldValues> = {
-  defaultValues: DefaultValues<T> | (() => Promise<DefaultValues<T>>);
+type FormProps = {
+  defaultValues: User;
 };
 
 const roles = ['admin', 'user', 'manager'];
 const statuses = ['todo', 'in_progress', 'done'];
 
-const values: Partial<User> = {
-  username: '',
-  email: '',
-  firstName: '',
-  lastName: '',
-  age: 18,
-  role: 'user',
-  isActive: true,
-  tasks: [],
-};
+const resolver = yupResolver(schema) as Resolver<User>;
 
-export const Form: FC<FormProps<User>> = ({ defaultValues }) => {
-  async function normalizeDefaultValues() {
-    const values = typeof defaultValues === 'function' ? await defaultValues() : defaultValues;
-    return {
-      ...values,
-      tasks: (values.tasks ?? []).map((task) => ({
-        name: task?.name ?? '',
-        status: task?.status ?? 'todo',
-      })),
-    };
-  }
+export const Form: FC<FormProps> = ({ defaultValues }) => {
   const { id } = useParams();
 
   const isEditMode = !!id;
 
   const navigate = useNavigate();
 
-  const methods = useForm<Partial<User>>({
-    defaultValues: normalizeDefaultValues,
-    resolver: yupResolver(schema) as Resolver<Partial<User>>,
+  const methods = useForm<User>({
+    defaultValues: defaultValues,
+    resolver,
   });
 
   const {
@@ -79,14 +53,17 @@ export const Form: FC<FormProps<User>> = ({ defaultValues }) => {
       if (!isEditMode) {
         changedFields = Object.fromEntries(
           Object.entries(data).filter(([key, value]) => {
-            const defVal = values?.[key as keyof User];
+            const defVal = defaultValues?.[key as keyof User];
 
             if (Array.isArray(value) && value.length === 0) {
               return false;
             }
-            return (value !== '' && value !== null) || (defVal !== '' && defVal !== null);
+
+            const isNotEmpty = (v: unknown) =>
+              compose((valid) => valid && !isEqual(v, ''), negate(isNil))(v);
+            return isNotEmpty(value) || isNotEmpty(defVal);
           })
-        ) as Partial<User>;
+        ) as User;
       }
 
       if (isEditMode) {
@@ -103,7 +80,7 @@ export const Form: FC<FormProps<User>> = ({ defaultValues }) => {
           })
         ) as Partial<User>;
       }
-
+      console.log(changedFields);
       const url = `http://localhost:3001/api/users${id ? `/${id}` : ''}`;
 
       await axios({

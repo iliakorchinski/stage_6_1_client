@@ -11,6 +11,8 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
+    "strictNullChecks": true,
+    "noImplicitAny": true,
     "noEmit": true,
 
     /* Linting */

@@ -5,9 +5,9 @@ import { useState, useEffect } from 'react';
 
 const CREATE_DEFAULT_VALUES: User = {
   username: '',
-  email: undefined,
-  firstName: undefined,
-  lastName: undefined,
+  email: null,
+  firstName: null,
+  lastName: null,
   age: 18,
   role: 'user',
   isActive: true,

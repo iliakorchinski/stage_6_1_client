@@ -1,7 +1,7 @@
 import { Box, Button, Checkbox, FormControlLabel, IconButton, Typography } from '@mui/material';
 import classes from './Form.module.css';
 import axios from 'axios';
-import { useForm, Controller, useFieldArray, type Resolver, FormProvider } from 'react-hook-form';
+import { useForm, Controller, useFieldArray, FormProvider } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useParams, useNavigate } from 'react-router-dom';
 import { schema } from '../../schemas/userValidationSchema';
@@ -20,7 +20,7 @@ type FormProps = {
 const roles = ['admin', 'user', 'manager'];
 const statuses = ['todo', 'in_progress', 'done'];
 
-const resolver = yupResolver(schema) as Resolver<User>;
+const resolver = yupResolver(schema);
 
 export const Form: FC<FormProps> = ({ defaultValues }) => {
   const { id } = useParams();
@@ -30,7 +30,7 @@ export const Form: FC<FormProps> = ({ defaultValues }) => {
   const navigate = useNavigate();
 
   const methods = useForm<User>({
-    defaultValues: defaultValues,
+    defaultValues,
     resolver,
   });
 
@@ -80,7 +80,6 @@ export const Form: FC<FormProps> = ({ defaultValues }) => {
           })
         ) as Partial<User>;
       }
-      console.log(changedFields);
       const url = `http://localhost:3001/api/users${id ? `/${id}` : ''}`;
 
       await axios({

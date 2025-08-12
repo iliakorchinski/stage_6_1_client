@@ -1,6 +1,6 @@
 import { Box, Button, Checkbox, FormControlLabel, IconButton, Typography } from '@mui/material';
 import classes from './Form.module.css';
-import axios from 'axios';
+// import axios from 'axios';
 import { useForm, Controller, useFieldArray, FormProvider } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -10,6 +10,7 @@ import { FieldText } from './Field/FieldText';
 import { SelectField } from './Field/SelectField';
 import type { FC } from 'react';
 import { compose, isNil, negate, isEqual } from 'lodash/fp';
+import { createOrUpdateUser } from '../../service/createOrUpdateUser';
 
 export type User = InferType<typeof schema>;
 
@@ -20,8 +21,6 @@ type FormProps = {
 const roles = ['admin', 'user', 'manager'];
 const statuses = ['todo', 'in_progress', 'done'];
 
-const resolver = yupResolver(schema);
-
 export const Form: FC<FormProps> = ({ defaultValues }) => {
   const { id } = useParams();
 
@@ -31,7 +30,7 @@ export const Form: FC<FormProps> = ({ defaultValues }) => {
 
   const methods = useForm<User>({
     defaultValues,
-    resolver,
+    resolver: yupResolver(schema),
   });
 
   const {
@@ -80,13 +79,7 @@ export const Form: FC<FormProps> = ({ defaultValues }) => {
           })
         ) as Partial<User>;
       }
-      const url = `http://localhost:3001/api/users${id ? `/${id}` : ''}`;
-
-      await axios({
-        method,
-        url,
-        data: changedFields,
-      });
+      await createOrUpdateUser(method, id, changedFields);
       navigate('/');
     } catch (err) {
       console.error(err);
@@ -114,13 +107,7 @@ export const Form: FC<FormProps> = ({ defaultValues }) => {
           defaultValue={true}
           render={({ field }) => (
             <FormControlLabel
-              control={
-                <Checkbox
-                  {...field}
-                  checked={field.value}
-                  onChange={(e) => field.onChange(e.target.checked)}
-                />
-              }
+              control={<Checkbox {...field} checked={field.value} />}
               label="Active user"
               sx={{ gridColumn: 'span 6' }}
             />
